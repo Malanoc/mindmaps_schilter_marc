@@ -3,10 +3,18 @@
 
 # Python
 __pycache__/
-*.pyc
-
-# Environment variables
-.env
+*.py[cod]
+*$py.class
 
 # Virtual environments
 venv/
+.env/
+
+# Environment variables (TOUS les .env partout dans le projet)
+.env
+.env.*
+!*.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
