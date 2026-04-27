@@ -242,7 +242,7 @@ def display_mindmap_radial(frame, nodes):
             return
 
         angle_step = (angle_end - angle_start) / len(children)
-        radius = level + level_spacing
+        radius = level_spacing + (level - 1) * 80
 
         for i, child in enumerate(children):
 
@@ -391,5 +391,3 @@ tk.Label(frm_result,text="RESULTS").pack()
 set_db_mode("local")
 display_maps()
 root.mainloop()
-
-
