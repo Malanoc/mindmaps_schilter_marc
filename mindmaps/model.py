@@ -35,6 +35,14 @@ def fetch_all(sql_query, params=None, db_mode="local"):
 def get_maps(db_mode):
     return fetch_all("select id, title, author_id from maps", None, db_mode)
 
+#renvoie la liste des users pour l'affichage
+def get_users(db_mode):
+    return fetch_all("select id, pseudo, level from users", None, db_mode)
+
+#renvoie la liste des nodes
+def get_nodes(db_mode):
+    return fetch_all("select map_id, parent_id, author_id, text, level from nodes", None, db_mode)
+
 
 # renvoie la liste de tous les nodes d'un map (avec le pseudo de l'auteur et sa couleur)
 def get_nodes_for_map(map_id, db_mode):
@@ -44,6 +52,30 @@ def get_nodes_for_map(map_id, db_mode):
 
 # fonctions pour insérer, mettre à jour et supprimer des maps et des nodes
 # fonction pour insérer un node (retourne l'id du node créé)
+def insert_node(map_id, parent_id, author_id, text, level, db_mode="local"):
+    db = get_connection(db_mode)
+    cursor = db.cursor()
+    cursor.execute("INSERT INTO nodes (map_id, parent_id, author_id, text, level) VALUES (%s, %s, %s, %s, %s)",
+                   (map_id, parent_id, author_id, text, level))
+    db.commit()
+    node_id = cursor.lastrowid
+    db.close()
+    return node_id
+#fonction pour mettre à jour un node
+def update_node(map_id, parent_id, author_id, text, level, db_mode="local"):
+    db = get_connection(db_mode)
+    cursor = db.cursor()
+    cursor.execute("UPDATE nodes SET parent_id=%s, author_id=%s, text=%s, level=%s WHERE id=%s",
+                   (parent_id, author_id, text, level, map_id))
+    db.commit()
+    db.close()
+#fonction pour supprimer un node
+def delete_node(node_id, db_mode="local"):
+    db = get_connection(db_mode)
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM nodes WHERE id=%s", (node_id,))
+    db.commit()
+    db.close()
 
 # fonction pour vérifier les identifiants de connexion d'un utilisateur (retourne les infos de l'utilisateur si ok, sinon None)
 def check_login(pseudo, password, db_mode="local"):

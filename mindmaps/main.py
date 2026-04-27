@@ -9,7 +9,7 @@ import tkinter.ttk as ttk
 from tkinter import messagebox, simpledialog
 from login import show_login
 from tree_display import display_array
-from model import get_maps,  get_nodes_for_map
+from model import get_maps, get_nodes_for_map, get_users, get_nodes
 from utils.session import Session
 import math
 
@@ -26,6 +26,17 @@ def display_maps():
     result = get_maps(db_mode)
     frm_result.tree = display_array(frm_result, result)
     frm_result.tree.bind("<Double-1>", on_map_double_click) # double clic pour afficher le mindmap dans right_frame selon le mode sélectionné (tree, radial ou forum)
+#afficher les users
+def display_users():
+    result = get_users(db_mode)
+    frm_result.tree = display_array(frm_result, result)
+
+
+#afficher les nodes
+def display_nodes():
+    result = get_nodes(db_mode)
+    frm_result.tree = display_array(frm_result, result)
+
        
 # traitement de l'affichage d'un mindmap selon le mode sélectionné (tree, radial ou forum)
 def on_map_double_click(event):
@@ -51,6 +62,8 @@ def display_mindmap(map_id):
             display_mindmap_tree(right_frame, nodes)
         elif mode == 'forum':
             display_mindmap_forum(right_frame, nodes)
+        elif mode == 'radial':
+            display_mindmap_radial(right_frame, nodes)
     else:
         tk.Label(right_frame, text="Aucun node pour ce mindmap").pack()
 
@@ -154,8 +167,108 @@ def display_mindmap_forum(frame, nodes):
 
     place_forum(root_node, 20, 20, 50) # le root prend 50% de la largeur, les enfants 45%, etc. 
     update_scroll_region()
+# Affichage du mindmap en radial avec canvas
+import tkinter as tk
+from tkinter import ttk
+import math
 
-# Cette fonction propose 3 actions sur un node : éditer le texte, supprimer le node ou insérer un nouveau node en dessous
+# Affichage du mindmap en radial avec canvas
+def display_mindmap_radial(frame, nodes):
+    container = tk.Frame(frame)
+    container.pack(fill='both', expand=True)
+
+    canvas = tk.Canvas(container, bg='white')
+    vsb = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+    hsb = ttk.Scrollbar(container, orient="horizontal", command=canvas.xview)
+
+    canvas.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+
+    vsb.pack(side="right", fill="y")
+    hsb.pack(side="bottom", fill="x")
+    canvas.pack(side="left", fill="both", expand=True)
+
+    # Mise à jour de la zone scrollable
+    def update_scroll_region(event=None):
+        canvas.configure(scrollregion=canvas.bbox("all"))
+
+    canvas.bind("<Configure>", update_scroll_region)
+
+    width = 1200
+    height = 900
+
+    # Centre du mindmap
+    center_x = width // 2
+    center_y = height // 2
+
+    # Taille des ovales
+    oval_width = 120
+    oval_height = 60
+
+    # Distance entre les niveaux
+    level_spacing = 180
+
+    # Détermine la racine du radial
+    root = next((n for n in nodes if n['parent_id'] in (None, 0)), None)
+    if not root:
+        return
+
+    # Crée un dictionnaire des enfants
+    children_map = {}
+    for node in nodes:
+        children_map.setdefault(node['parent_id'], []).append(node)
+
+    # fonction de dessin d'un node
+    def draw_node(x, y, node, color="lightblue"):
+
+        oval = canvas.create_oval(x - oval_width // 2,y - oval_height // 2,x + oval_width // 2,y + oval_height // 2,fill=color,outline="black")
+
+        canvas.create_text(x,y,text=node['text'][:20],width=oval_width - 10)
+
+        canvas.tag_bind(oval, "<Button-3>", lambda e, n=node: edit_node(e, n))
+
+    # Fonction simple pour aller jusqu'au bord de l'ovale
+    def get_edge_point(cx, cy, angle):
+        # On avance depuis le centre dans la direction de l’angle en utilisant la taille de l’ovale
+        return (
+            cx + (oval_width // 2) * math.cos(angle),
+            cy + (oval_height // 2) * math.sin(angle)
+        )
+
+    # Fonction récursive pour le dessin des enfants
+    def draw_children(parent_node, x, y, level=1, angle_start=0, angle_end=360):
+
+        children = children_map.get(parent_node['id'], [])
+        if not children:
+            return
+
+        angle_step = (angle_end - angle_start) / len(children)
+        radius = level + level_spacing
+
+        for i, child in enumerate(children):
+
+            angle_deg = angle_start + i * angle_step
+            angle_rad = math.radians(angle_deg)
+
+            # Position du child
+            child_x = x + radius * math.cos(angle_rad)
+            child_y = y + radius * math.sin(angle_rad)
+
+            # Ligne bord → bord (version simplifiée)
+            start_x, start_y = get_edge_point(x, y, angle_rad)
+            end_x, end_y = get_edge_point(child_x, child_y, angle_rad + math.pi)
+
+            canvas.create_line(start_x, start_y, end_x, end_y)
+
+            # Dessiner le node enfant
+            draw_node(child_x, child_y, child, child.get("color", "lightgreen"))
+
+            # Récursion
+            draw_children(child,child_x,child_y,level + 1,angle_start + i * angle_step,angle_start + (i + 1) * angle_step)
+
+    # Dessin final
+    draw_node(center_x, center_y, root, "lightblue")
+    draw_children(root, center_x, center_y)
+#Cette fonction propose 3 actions sur un node : éditer le texte, supprimer le node ou insérer un nouveau node en dessous
 def edit_node(event, node):
     #if not check_auth():
     #    return
@@ -207,8 +320,9 @@ menubar = tk.Menu(root)
 # Menu Afficher
 display_menu = tk.Menu(menubar, tearoff=0)
 display_menu.add_command(label="Maps", command=display_maps)
+display_menu.add_command(label="Users", command=display_users)
+display_menu.add_command(label="Nodes", command=display_nodes)
 menubar.add_cascade(label="Afficher", menu=display_menu)
-
 # Menu Login/Register
 login_menu = tk.Menu(menubar, tearoff=0)
 login_menu.add_command(label="Login", command=login)
@@ -261,6 +375,7 @@ frm_options.grid(column=0, row=2, pady=10)
 tk.Label(frm_options, text="Mode d'affichage Mindmap:").pack(anchor='w')
 tk.Radiobutton(frm_options, text="Treeview", variable=display_mode, value='tree', command=refresh_mindmap).pack(anchor='w')
 tk.Radiobutton(frm_options, text="Forum", variable=display_mode, value='forum', command=refresh_mindmap).pack(anchor='w')
+tk.Radiobutton(frm_options, text="Radial",variable=display_mode, value='radial', command=refresh_mindmap).pack(anchor='w')
 
 # frame pour l'affichage des résultats dans left_frame
 frm_result = tk.Frame(left_frame, bg="lightgreen")

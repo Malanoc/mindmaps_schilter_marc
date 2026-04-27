@@ -51,7 +51,7 @@ def display_array(frame, data):
 
     # colonnes + largeur automatique
     for col in columns:
-        tree.heading(col, text=col)
+        tree.heading(col, text=col, command=lambda c=col: sort_by_column(tree, c, data, columns))
         tree.heading(col, anchor="w") # alignement à gauche
         tree.column(col, width=tkFontMeasure(tree, col, data), stretch=True)
 
@@ -84,3 +84,14 @@ def tkFontMeasure(tree, col, data):
 
     # un petit padding et limite à 200px
     return min(width + 20, 200)
+#fonction pour tirer l'ordre d'une colonne
+def sort_by_column(tree, col, data, columns):
+    """Trie les données puis réaffiche le tableau."""
+    # détecter tri ascendant/descendant
+    descending = getattr(tree, "sort_desc_"+col, False)
+    setattr(tree, "sort_desc_"+col, not descending)
+
+    data.sort(key=lambda r: r[col], reverse=descending)
+
+    # réaffichage
+    insert_rows(tree, data, columns)
