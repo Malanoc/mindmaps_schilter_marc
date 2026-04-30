@@ -84,6 +84,7 @@ def tkFontMeasure(tree, col, data):
 
     # un petit padding et limite à 200px
     return min(width + 20, 200)
+
 #fonction pour tirer l'ordre d'une colonne
 def sort_by_column(tree, col, data, columns):
     """Trie les données puis réaffiche le tableau."""

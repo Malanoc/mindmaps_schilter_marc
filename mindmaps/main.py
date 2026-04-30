@@ -35,6 +35,10 @@ def display_users():
 #afficher les nodes
 def display_nodes():
     result = get_nodes(db_mode)
+    # remplacer les none par 0
+    for record in result:
+        if record["parent_id"] is None:
+            record["parent_id"] = 0
     frm_result.tree = display_array(frm_result, result)
 
        
