@@ -87,6 +87,15 @@ def display_mindmap_tree(frame, nodes):
     style.configure("Right.Treeview", font=("TkDefaultFont", 20), rowheight=35)
     tree.configure(style="Right.Treeview")
 
+    # Donne le focus au canvas pour permettre le scroll avec la molette, lorsque la souris le survole.
+    tree.bind("<Enter>", lambda e: tree.focus_set())
+
+    # Scroll vertical
+    tree.bind("<MouseWheel>", lambda e: tree.yview_scroll(int(-1 * (e.delta / 120)), "units"))
+
+    # Scroll horizontal avec SHIFT
+    tree.bind("<Shift-MouseWheel>", lambda e: tree.xview_scroll(int(-1 * (e.delta / 120)), "units"))
+
     # Fonction récursive pour insérer les nodes
     def insert_nodes(parent, parent_id=None):
         for node in nodes:
@@ -119,6 +128,14 @@ def display_mindmap_forum(frame, nodes):
     vsb.pack(side="right", fill="y")
     hsb.pack(side="bottom", fill="x")
     canvas.pack(side="left", fill="both", expand=True)
+    # Donne le focus au canvas pour permettre le scroll avec la molette, lorsque la souris le survole.
+    canvas.bind("<Enter>", lambda e: canvas.focus_set())
+
+    # Scroll vertical
+    canvas.bind("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"))
+
+    # Scroll horizontal avec SHIFT
+    canvas.bind("<Shift-MouseWheel>", lambda e: canvas.xview_scroll(int(-1 * (e.delta / 120)), "units"))
 
     # Mise à jour de la zone scrollable
     def update_scroll_region(event=None):
@@ -190,6 +207,16 @@ def display_mindmap_radial(frame, nodes):
     vsb.pack(side="right", fill="y")
     hsb.pack(side="bottom", fill="x")
     canvas.pack(side="left", fill="both", expand=True)
+
+    # Donne le focus au canvas pour permettre le scroll avec la molette, lorsque la souris le survole.
+    canvas.bind("<Enter>", lambda e: canvas.focus_set())
+
+    # Scroll vertical
+    canvas.bind("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"))
+
+    # Scroll horizontal avec SHIFT
+    canvas.bind("<Shift-MouseWheel>", lambda e: canvas.xview_scroll(int(-1 * (e.delta / 120)), "units"))
+
 
     # Mise à jour de la zone scrollable
     def update_scroll_region(event=None):
