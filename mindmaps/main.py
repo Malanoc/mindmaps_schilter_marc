@@ -223,20 +223,13 @@ def display_mindmap_radial(frame, nodes):
 
     # fonction de dessin d'un node
     def draw_node(x, y, node, color="lightblue"):
-
         oval = canvas.create_oval(x - oval_width // 2,y - oval_height // 2,x + oval_width // 2,y + oval_height // 2,fill=color,outline="black")
-
         canvas.create_text(x,y,text=node['text'][:20],width=oval_width - 10)
-
         canvas.tag_bind(oval, "<Button-3>", lambda e, n=node: edit_node(e, n))
 
     # Fonction simple pour aller jusqu'au bord de l'ovale
     def get_edge_point(cx, cy, angle):
-        # On avance depuis le centre dans la direction de l’angle en utilisant la taille de l’ovale
-        return (
-            cx + (oval_width // 2) * math.cos(angle),
-            cy + (oval_height // 2) * math.sin(angle)
-        )
+        return (cx + (oval_width // 2) * math.cos(angle), cy + (oval_height // 2) * math.sin(angle))
 
     # Fonction récursive pour le dessin des enfants
     def draw_children(parent_node, x, y, level=1, angle_start=0, angle_end=360):
@@ -245,19 +238,26 @@ def display_mindmap_radial(frame, nodes):
         if not children:
             return
 
-        angle_step = (angle_end - angle_start) / len(children)
-        radius = level_spacing + (level - 1) * 80
+        # Distance (linéaire + ajustée selon nb enfants)
+        radius = level_spacing + (level - 1) * 80 + len(children) * 8
+
+        # Angle (avec petite marge fixe pour éviter l'étalement total)
+        margin = 30
+        angle_total = (angle_end - angle_start) - margin
+        angle_step = angle_total / len(children)
+        angle_step = max(angle_step, 18)
+        start_angle = angle_start + margin / 2
 
         for i, child in enumerate(children):
 
-            angle_deg = angle_start + i * angle_step
+            angle_deg = start_angle + i * angle_step
             angle_rad = math.radians(angle_deg)
 
             # Position du child
             child_x = x + radius * math.cos(angle_rad)
             child_y = y + radius * math.sin(angle_rad)
 
-            # Ligne bord → bord (version simplifiée)
+            # Ligne bord → bord
             start_x, start_y = get_edge_point(x, y, angle_rad)
             end_x, end_y = get_edge_point(child_x, child_y, angle_rad + math.pi)
 
@@ -266,8 +266,9 @@ def display_mindmap_radial(frame, nodes):
             # Dessiner le node enfant
             draw_node(child_x, child_y, child, child.get("color", "lightgreen"))
 
-            # Récursion
-            draw_children(child,child_x,child_y,level + 1,angle_start + i * angle_step,angle_start + (i + 1) * angle_step)
+            # Récursion (angle FIXE autour du parent → évite explosion)
+            spread = max(90, min(160, len(children) * 20))
+            draw_children(child,child_x,child_y,level + 1,angle_deg - spread/2,angle_deg + spread/2)
 
     # Dessin final
     draw_node(center_x, center_y, root, "lightblue")
