@@ -3,6 +3,8 @@
 # 13 avril 2026
 # tree_display.py : affichage d'un tableau de données dans un TreeView
 
+
+
 # utils/session.py : gestion de la session utilisateur (stockage du pseudo et du niveau d'accès)
 class Session:
     pseudo = None
@@ -24,4 +26,7 @@ class Session:
     # Méthode pour le logout de l'utilisateur
     @classmethod 
     def logout(cls):
-        None # à implémenter
+        cls.pseudo = None
+        cls.level = None
+        cls.id = None
+

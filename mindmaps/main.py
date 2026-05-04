@@ -6,12 +6,14 @@
 
 import tkinter as tk
 import tkinter.ttk as ttk
+from atexit import register
 from tkinter import messagebox, simpledialog
 from login import show_login
 from tree_display import display_array
-from model import get_maps, get_nodes_for_map, get_users, get_nodes
+from model import get_maps, get_nodes_for_map, get_users, get_nodes, create_user
 from utils.session import Session
 import math
+import bcrypt
 
 # Variable globale pour le mode DB
 db_mode = None
@@ -337,7 +339,74 @@ def set_db_mode(mode):
 def login():
     show_login(root)
     if Session.is_authenticated():
-        lbl_user.config(text=f"Connecté en tant que {Session.pseudo}") 
+        lbl_user.config(text=f"Connecté en tant que {Session.pseudo}")
+# deconnexion
+def logout():
+    #déconnecte la session authentifiée
+    Session.logout()
+    lbl_user.config(text="Non connecté")
+
+# inscription
+def register_user():
+
+    win = tk.Toplevel(root)
+    win.title("Inscription")
+    win.geometry("500x300")
+
+    tk.Label(win, text="Pseudo").pack(pady=5)
+    entry_pseudo = tk.Entry(win)
+    entry_pseudo.pack()
+
+    tk.Label(win, text="Mot de passe").pack(pady=5)
+    entry_password = tk.Entry(win, show="*")
+    entry_password.pack()
+
+    tk.Label(win, text="Confirmation").pack(pady=5)
+    entry_confirm = tk.Entry(win, show="*")
+    entry_confirm.pack()
+
+    colors = [
+        "lightblue", "lightgreen", "lightyellow", "lightpink", "lightcoral",
+        "lightsalmon", "lightseagreen", "lightsteelblue", "lightcyan", "lavender",
+        "thistle", "plum", "peachpuff", "moccasin", "bisque",
+        "honeydew", "mintcream", "azure", "aliceblue", "beige",
+        "ivory", "khaki", "palegreen", "paleturquoise", "powderblue",
+        "skyblue", "aquamarine", "turquoise", "wheat", "orange"
+    ]
+    tk.Label(win, text="Choisir une couleur").pack(pady=5)
+
+    selected_color = tk.StringVar(value=colors[0])
+    color_menu = ttk.Combobox(win, textvariable=selected_color, values=colors, state="readonly")
+    color_menu.pack()
+
+    def submit():
+        pseudo = entry_pseudo.get()
+        password = entry_password.get()
+        confirm = entry_confirm.get()
+        color = selected_color.get()
+
+        if not pseudo or not password:
+            messagebox.showerror("Erreur", "Champs vides")
+            return
+
+        if password != confirm:
+            messagebox.showerror("Erreur", "Les mots de passe ne correspondent pas")
+            return
+
+        import bcrypt
+        hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+        try:
+            create_user(pseudo, hashed.decode('utf-8'), db_mode, color)
+
+            messagebox.showinfo("Succès", "Utilisateur créé")
+            win.destroy()
+
+        except Exception as e:
+            messagebox.showerror("Erreur", str(e))
+
+    tk.Button(win, text="Créer", command=submit).pack(pady=10)
+
 
 
 # fenêtre principale
@@ -358,6 +427,8 @@ menubar.add_cascade(label="Afficher", menu=display_menu)
 # Menu Login/Register
 login_menu = tk.Menu(menubar, tearoff=0)
 login_menu.add_command(label="Login", command=login)
+login_menu.add_command(label="Logout", command=logout)
+login_menu.add_command(label="Register", command=register_user)
 menubar.add_cascade(label="Login/Register", menu=login_menu)
 
 # Menu local/remote

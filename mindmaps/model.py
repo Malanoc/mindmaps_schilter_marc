@@ -93,4 +93,12 @@ def check_login(pseudo, password, db_mode="local"):
     if bcrypt.checkpw(password.encode(), stored):
         return row
     return None
+# fonction pour enregistrer un nouvel utilisateur
+def create_user(pseudo, password_hash, db_mode, color):
+    conn = get_connection(db_mode)
+    cursor = conn.cursor()
 
+    cursor.execute("INSERT INTO users (pseudo, hash, level, color) VALUES (%s, %s, %s, %s)",(pseudo, password_hash, 1, color))
+
+    conn.commit()
+    conn.close()
