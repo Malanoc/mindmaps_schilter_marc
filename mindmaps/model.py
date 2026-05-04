@@ -1,6 +1,6 @@
 # Projet mindmaps : prototype d'affichage de mindmap en radial et forum 
-# JCY pour SI-CA1 (projet Python) - 2025-2026
-# 13 avril 2026
+# JCY et Marc Schilter (projet Python) - 2025-2026 -v0.1
+# 4 mai 2026
 # model.py : définition des fonctions pour interagir avec la base de données
 
 import mysql.connector

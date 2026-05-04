@@ -1,7 +1,7 @@
 # prototype d'affichage de mindmap en radial et forum
 # avec possibilité d'éditer les nodes (si auteur) ou d'en ajouter en dessous    
-# JCY pour SI-CA1 (projet Python) - 2025-2026 -v0.1
-# 13 avril 2026
+# JCY et Marc Schilter (projet Python) - 2025-2026 -v0.1
+# 4 mai 2026
 # main.py : affichage de la fenêtre principale, gestion de la connexion et des différentes vues (tables + mindmap)
 
 import tkinter as tk
@@ -448,8 +448,8 @@ def register_user():
 
 # Fenêtre principale
 root = tk.Tk()
-
-root.minsize(1200, 800)  # Ajusté pour accommoder les deux frames
+# Ajusté pour accommoder les deux frames
+root.minsize(1200, 800)
 root.title("Mindmaps - Version de base v0.1")
 
 # Création du menu
