@@ -190,10 +190,6 @@ def display_mindmap_forum(frame, nodes):
 
     place_forum(root_node, 20, 20, 50) # le root prend 50% de la largeur, les enfants 45%, etc. 
     update_scroll_region()
-# Affichage du mindmap en radial avec canvas
-import tkinter as tk
-from tkinter import ttk
-import math
 
 # Affichage du mindmap en radial avec canvas
 def display_mindmap_radial(frame, nodes):
