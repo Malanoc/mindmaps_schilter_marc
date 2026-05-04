@@ -340,7 +340,7 @@ def display_mindmap_radial(frame, nodes):
             draw_children(child,child_x,child_y,level + 1,angle_deg - spread/2,angle_deg + spread/2)
 
     # Dessin final
-    draw_node(center_x, center_y, root, "lightblue")
+    draw_node(center_x, center_y, root,root.get("color", "lightblue"))
     draw_children(root, center_x, center_y)
 
 #Cette fonction propose 3 actions sur un node : éditer le texte, supprimer le node ou insérer un nouveau node en dessous
