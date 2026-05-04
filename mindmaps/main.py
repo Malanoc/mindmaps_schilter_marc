@@ -434,7 +434,11 @@ def register_user():
             win.destroy()
 
         except Exception as e:
-            messagebox.showerror("Erreur", str(e))
+            # Message d'erreur si le pseudo est déjà pris
+            if "Duplicate entry" in str(e) or "UNIQUE" in str(e):
+                messagebox.showerror("Erreur", "Ce pseudo existe déjà")
+            else:
+                messagebox.showerror("Erreur", str(e))
 
     # Frame pour aligner les boutons horizontalement en bas de la fenêtre d'inscription.
     btn_frame = tk.Frame(win)
