@@ -220,6 +220,34 @@ def display_mindmap_radial(frame, nodes):
     canvas.bind("<Shift-MouseWheel>", lambda e: canvas.xview_scroll(int(-1 * (e.delta / 120)), "units"))
 
 
+
+    scale_factor = 1.0  # niveau de zoom actuel
+
+    def zoom(event):
+        nonlocal scale_factor
+
+        # facteur de zoom
+        if event.delta > 0:
+            factor = 1.1  # zoom in
+        else:
+            factor = 0.9  # zoom out
+
+        scale_factor *= factor
+
+        # position de la souris dans le canvas
+        x = canvas.canvasx(event.x)
+        y = canvas.canvasy(event.y)
+
+        # applique le zoom à tous les éléments
+        canvas.scale("all", x, y, factor, factor)
+
+        # ajuste la zone scrollable
+        canvas.configure(scrollregion=canvas.bbox("all"))
+
+    # binder le zoom à la molette de la souris + ctrl
+    canvas.bind("<Control-MouseWheel>", zoom)
+
+
     # Mise à jour de la zone scrollable
     def update_scroll_region(event=None):
         canvas.configure(scrollregion=canvas.bbox("all"))
