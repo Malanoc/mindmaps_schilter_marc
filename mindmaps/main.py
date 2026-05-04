@@ -7,7 +7,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from atexit import register
-from tkinter import messagebox, simpledialog
+from tkinter import messagebox, simpledialog, colorchooser
 from login import show_login
 from tree_display import display_array
 from model import get_maps, get_nodes_for_map, get_users, get_nodes, create_user
@@ -252,8 +252,11 @@ def display_mindmap_radial(frame, nodes):
 
     # fonction de dessin d'un node
     def draw_node(x, y, node, color="lightblue"):
+        #centre l’ovale autour du point (x, y)
         oval = canvas.create_oval(x - oval_width // 2,y - oval_height // 2,x + oval_width // 2,y + oval_height // 2,fill=color,outline="black")
+        # Ajoute le texte au centre de l'ovale
         canvas.create_text(x,y,text=node['text'][:20],width=oval_width - 10)
+        # Associe un clic droit à cet ovale pour éditer le node
         canvas.tag_bind(oval, "<Button-3>", lambda e, n=node: edit_node(e, n))
 
     # Fonction simple pour aller jusqu'au bord de l'ovale
@@ -263,7 +266,10 @@ def display_mindmap_radial(frame, nodes):
     # Fonction récursive pour le dessin des enfants
     def draw_children(parent_node, x, y, level=1, angle_start=0, angle_end=360):
 
+        # Récupère la liste des enfants du node courant
         children = children_map.get(parent_node['id'], [])
+
+        # Si le node n'a pas d'enfants, on arrête ici
         if not children:
             return
 
@@ -272,24 +278,34 @@ def display_mindmap_radial(frame, nodes):
 
         # Angle (avec petite marge fixe pour éviter l'étalement total)
         margin = 30
+        # Angle réellement utilisé pour placer les enfants
         angle_total = (angle_end - angle_start) - margin
+        # espace angulaire entre chaque enfant pour la répartition
         angle_step = angle_total / len(children)
+        # impose un minimum de 18° pour éviter que les nodes soient trop serrés
         angle_step = max(angle_step, 18)
+        # décale le point de départ pour centrer les enfants dans la zone disponible
         start_angle = angle_start + margin / 2
 
         for i, child in enumerate(children):
-
+            # Calcule l'angle du child en degrés (répartition autour du parent)
             angle_deg = start_angle + i * angle_step
+
+            # Convertit l'angle en radians (obligatoire pour cos/sin)
             angle_rad = math.radians(angle_deg)
 
-            # Position du child
-            child_x = x + radius * math.cos(angle_rad)
-            child_y = y + radius * math.sin(angle_rad)
+            # Position du child (coordonnées polaires → cartésiennes)
+            child_x = x + radius * math.cos(angle_rad)  # position horizontale
+            child_y = y + radius * math.sin(angle_rad)  # position verticale
 
-            # Ligne bord → bord
+            # Calcule le point de départ sur le bord de l’ovale parent
             start_x, start_y = get_edge_point(x, y, angle_rad)
+
+            # Calcule le point d’arrivée sur le bord de l’ovale enfant
+            # (angle + π = direction opposée)
             end_x, end_y = get_edge_point(child_x, child_y, angle_rad + math.pi)
 
+            # Dessine une ligne entre les deux ovales (bord à bord)
             canvas.create_line(start_x, start_y, end_x, end_y)
 
             # Dessiner le node enfant
@@ -302,6 +318,7 @@ def display_mindmap_radial(frame, nodes):
     # Dessin final
     draw_node(center_x, center_y, root, "lightblue")
     draw_children(root, center_x, center_y)
+
 #Cette fonction propose 3 actions sur un node : éditer le texte, supprimer le node ou insérer un nouveau node en dessous
 def edit_node(event, node):
     #if not check_auth():
@@ -353,6 +370,10 @@ def register_user():
     win.title("Inscription")
     win.geometry("500x300")
 
+    win.transient(root)  # lie la fenêtre à la fenêtre principale
+    win.grab_set()  # bloque les interactions avec le reste de l'app
+    win.focus_set()  # donne le focus à la fenêtre
+
     tk.Label(win, text="Pseudo").pack(pady=5)
     entry_pseudo = tk.Entry(win)
     entry_pseudo.pack()
@@ -365,19 +386,30 @@ def register_user():
     entry_confirm = tk.Entry(win, show="*")
     entry_confirm.pack()
 
-    colors = [
-        "lightblue", "lightgreen", "lightyellow", "lightpink", "lightcoral",
-        "lightsalmon", "lightseagreen", "lightsteelblue", "lightcyan", "lavender",
-        "thistle", "plum", "peachpuff", "moccasin", "bisque",
-        "honeydew", "mintcream", "azure", "aliceblue", "beige",
-        "ivory", "khaki", "palegreen", "paleturquoise", "powderblue",
-        "skyblue", "aquamarine", "turquoise", "wheat", "orange"
-    ]
+    # Affiche un label indiquant à l'utilisateur qu'il doit choisir une couleur
     tk.Label(win, text="Choisir une couleur").pack(pady=5)
 
-    selected_color = tk.StringVar(value=colors[0])
-    color_menu = ttk.Combobox(win, textvariable=selected_color, values=colors, state="readonly")
-    color_menu.pack()
+    # Variable Tkinter qui stocke la couleur sélectionnée (format hex)
+    selected_color = tk.StringVar(value="#4F46E5")
+
+    # Label qui sert d’aperçu visuel de la couleur choisie. Le fond (bg) est initialisé avec la couleur par défaut
+    preview = tk.Label(win, text="Aperçu", bg=selected_color.get(), width=20)
+    preview.pack(pady=5)
+
+    # Fonction appelée quand l'utilisateur clique sur le bouton
+    def choose_color():
+        # Ouvre la fenêtre native de sélection de couleur, askcolor() retourne (RGB, HEX), on prend la valeur HEX [1]
+        color = colorchooser.askcolor()[1]
+
+        if color:
+            # Met à jour la variable avec la nouvelle couleur
+            selected_color.set(color)
+            # Met à jour l’aperçu visuel
+            preview.config(bg=color)
+
+    # Bouton qui permet d’ouvrir le color picker
+    tk.Button(win, text="Choisir une couleur", command=choose_color).pack(pady=5)
+
 
     def submit():
         pseudo = entry_pseudo.get()
@@ -385,17 +417,16 @@ def register_user():
         confirm = entry_confirm.get()
         color = selected_color.get()
 
+        # Vérifie que les champs ne sont pas vides
         if not pseudo or not password:
             messagebox.showerror("Erreur", "Champs vides")
             return
-
+        # Vérifie que le mot de passe et la confirmation sont identiques
         if password != confirm:
             messagebox.showerror("Erreur", "Les mots de passe ne correspondent pas")
             return
-
-        import bcrypt
+        # Hashe le mot de passe avec bcrypt
         hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-
         try:
             create_user(pseudo, hashed.decode('utf-8'), db_mode, color)
 
@@ -405,11 +436,17 @@ def register_user():
         except Exception as e:
             messagebox.showerror("Erreur", str(e))
 
-    tk.Button(win, text="Créer", command=submit).pack(pady=10)
+    # Frame pour aligner les boutons horizontalement en bas de la fenêtre d'inscription.
+    btn_frame = tk.Frame(win)
+    btn_frame.pack(pady=10)
+
+    tk.Button(btn_frame, text="Créer", command=submit).pack(side="left", padx=5)
+    tk.Button(btn_frame, text="Annuler", command=win.destroy).pack(side="left", padx=5)
 
 
 
-# fenêtre principale
+
+# Fenêtre principale
 root = tk.Tk()
 
 root.minsize(1200, 800)  # Ajusté pour accommoder les deux frames
