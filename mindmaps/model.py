@@ -62,11 +62,13 @@ def insert_node(map_id, parent_id, author_id, text, level, db_mode="local"):
     db.close()
     return node_id
 #fonction pour mettre à jour un node
-def update_node(map_id, parent_id, author_id, text, level, db_mode="local"):
+def update_node(node_id, text,db_mode="local"):
     db = get_connection(db_mode)
     cursor = db.cursor()
-    cursor.execute("UPDATE nodes SET parent_id=%s, author_id=%s, text=%s, level=%s WHERE id=%s",
-                   (parent_id, author_id, text, level, map_id))
+    cursor.execute(
+        "UPDATE nodes SET text=%s WHERE id=%s",
+        (text, node_id)
+    )
     db.commit()
     db.close()
 #fonction pour supprimer un node

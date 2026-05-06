@@ -10,7 +10,7 @@ from atexit import register
 from tkinter import messagebox, simpledialog, colorchooser
 from login import show_login
 from tree_display import display_array
-from model import get_maps, get_nodes_for_map, get_users, get_nodes, create_user
+from model import get_maps, get_nodes_for_map, get_users, get_nodes, create_user, update_node, delete_node, insert_node
 from utils.session import Session
 import math
 import bcrypt
@@ -343,6 +343,7 @@ def display_mindmap_radial(frame, nodes):
 #Cette fonction propose 3 actions sur un node : éditer le texte, supprimer le node ou insérer un nouveau node en dessous
 def edit_node(event, node):
     #if not check_auth():
+    #    messagebox.showerror("Erreur", "Vous devez être connecté en tant qu'utilisateur pour effectuer cette action.")
     #    return
     menu = tk.Menu(root, tearoff=0)
     menu.add_command(label="Éditer", command=lambda: edit_text(node))
@@ -352,15 +353,49 @@ def edit_node(event, node):
 
 # propose d'éditer le texte d'un node (seulement si l'utilisateur est l'auteur du node)
 def edit_text(node):
-    messagebox.showerror("Erreur", "Pas encore implémenté") # à implémenter : vérifier que l'utilisateur est l'auteur du node, puis proposer une fenêtre de saisie pour éditer le texte du node, puis mettre à jour le node dans la base de données et rafraîchir l'affichage du mindmap
+    # Compare l'author id du node au id de l'utilisateur connecté
+    if node["author_id"] != Session.id:
+        messagebox.showerror("Erreur", "Vous n'êtes pas l'auteur de ce node.")
+        return
+    # Si les deux id correspondent, propose une fenêtre de saisie pour éditer le texte du node
+    new_text = simpledialog.askstring("Éditer le node", "Nouveau texte :", initialvalue=node["text"])
+    # vérifie que le texte a bien changé avant de faire la requête de mise à jour.
+    if new_text and new_text != node["text"]:
+        try:
+            update_node(node["id"], new_text, db_mode=db_mode)
+            refresh_mindmap()  # rafraîchir l'affichage du mindmap pour voir le changement
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Impossible de mettre à jour le node : {str(e)}")
 
 # propose de supprimer un node (seulement si l'utilisateur est l'auteur du node)
 def delete_node_action(node):
-    messagebox.showerror("Erreur", "Pas encore implémenté") # à implémenter : vérifier que l'utilisateur est l'auteur du node, puis proposer une confirmation pour supprimer le node, puis supprimer le node dans la base de données et rafraîchir l'affichage du mindmap
+    # Compare l'author id du node au id de l'utilisateur connecté
+    if node["author_id"] != Session.id:
+        messagebox.showerror("Erreur", "Vous n'êtes pas l'auteur de ce node.")
+        return
+    # Si les deux id correspondent, propose une confirmation avant de supprimer le node
+    if messagebox.askyesno("Confirmer la suppression", "Êtes-vous sûr de vouloir supprimer ce node ?"):
+        try:
+            delete_node(node["id"], db_mode)
+            refresh_mindmap()  # rafraîchir l'affichage du mindmap pour voir le changement
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Impossible de supprimer le node : {str(e)}")
 
 # propose d'insérer un nouveau node en dessous du node sélectionné (le nouveau node aura comme parent le node sélectionné)
 def insert_below(node):
-    messagebox.showerror("Erreur", "Pas encore implémenté") # à implémenter : proposer une fenêtre de saisie pour insérer le texte du nouveau node, puis insérer le node dans la base de données et rafraîchir l'affichage du mindmap
+    if not check_auth():
+        messagebox.showerror("Erreur", "Vous devez être connecté en tant qu'utilisateur pour effectuer cette action.")
+        return
+    new_text = simpledialog.askstring("Insérer un node", "Texte du nouveau node :")
+    # vérifie que le texte n'est pas vide avant de faire la requête d'insertion.
+    if new_text and new_text.strip() != "":
+        try:
+            insert_node(current_map_id, node["id"], Session.id, new_text, node["level"] + 1, db_mode)
+            refresh_mindmap()  # rafraîchir l'affichage du mindmap pour voir le nouveau node
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Impossible d'insérer le node : {str(e)}")
+    else:
+        messagebox.showerror("Erreur", "Le texte du node ne peut pas être vide.")
 
 
 # Permet de changer le mode de la base de données (local ou remote) et met à jour la variable globale db_mode
