@@ -55,8 +55,7 @@ def get_nodes_for_map(map_id, db_mode):
 def insert_node(map_id, parent_id, author_id, text, level, db_mode="local"):
     db = get_connection(db_mode)
     cursor = db.cursor()
-    cursor.execute("INSERT INTO nodes (map_id, parent_id, author_id, text, level) VALUES (%s, %s, %s, %s, %s)",
-                   (map_id, parent_id, author_id, text, level))
+    cursor.execute("INSERT INTO nodes (map_id, parent_id, author_id, text, level) VALUES (%s, %s, %s, %s, %s)",(map_id, parent_id, author_id, text, level))
     db.commit()
     node_id = cursor.lastrowid
     db.close()
@@ -65,10 +64,7 @@ def insert_node(map_id, parent_id, author_id, text, level, db_mode="local"):
 def update_node(node_id, text,db_mode="local"):
     db = get_connection(db_mode)
     cursor = db.cursor()
-    cursor.execute(
-        "UPDATE nodes SET text=%s WHERE id=%s",
-        (text, node_id)
-    )
+    cursor.execute("UPDATE nodes SET text=%s WHERE id=%s",(text, node_id))
     db.commit()
     db.close()
 #fonction pour supprimer un node
