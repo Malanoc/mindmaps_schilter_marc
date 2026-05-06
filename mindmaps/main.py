@@ -216,11 +216,8 @@ def display_mindmap_radial(frame, nodes):
     canvas.bind("<Shift-MouseWheel>", lambda e: canvas.xview_scroll(int(-1 * (e.delta / 120)), "units"))
 
 
-
-    scale_factor = 1.0  # niveau de zoom actuel
-
     def zoom(event):
-        nonlocal scale_factor
+        scale_factor = 1.0  # niveau de zoom actuel
 
         # facteur de zoom
         if event.delta > 0:
