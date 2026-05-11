@@ -1,6 +1,6 @@
 # Projet mindmaps : prototype d'affichage de mindmap en radial et forum 
-# JCY et Marc Schilter (projet Python) - 2025-2026 - V0.3
-# 4 mai 2026
+# JCY et Marc Schilter (projet Python) - 2025-2026 - V1.0
+# 11 mai 2026
 # tree_display.py : affichage d'un tableau de données dans un TreeView
 
 import tkinter as tk

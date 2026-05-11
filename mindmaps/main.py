@@ -1,7 +1,7 @@
 # prototype d'affichage de mindmap en radial et forum
 # avec possibilité d'éditer les nodes (si auteur) ou d'en ajouter en dessous    
-# JCY et Marc Schilter (projet Python) - 2025-2026 - V0.3
-# 4 mai 2026
+# JCY et Marc Schilter (projet Python) - 2025-2026 - V1.0
+# 11 mai 2026
 # main.py : affichage de la fenêtre principale, gestion de la connexion et des différentes vues (tables + mindmap)
 
 import tkinter as tk
