@@ -1,5 +1,5 @@
 # Projet mindmaps : prototype d'affichage de mindmap en radial et forum 
-# JCY et Marc Schilter (projet Python) - 2025-2026 -v0.1
+# JCY et Marc Schilter (projet Python) - 2025-2026 -v0.3
 # 4 mai 2026
 # model.py : définition des fonctions pour interagir avec la base de données
 
@@ -95,8 +95,38 @@ def check_login(pseudo, password, db_mode="local"):
 def create_user(pseudo, password_hash, db_mode, color):
     conn = get_connection(db_mode)
     cursor = conn.cursor()
-
     cursor.execute("INSERT INTO users (pseudo, hash, level, color) VALUES (%s, %s, %s, %s)",(pseudo, password_hash, 1, color))
-
     conn.commit()
     conn.close()
+
+# fonction pour créer un nouveau mindmap(retourne l'id du map créé)
+def insert_map(title, author_id, db_mode="local"):
+    db = get_connection(db_mode)
+    cursor = db.cursor()
+    cursor.execute("INSERT INTO maps (title, author_id) VALUES (%s, %s)",(title, author_id))
+    db.commit()
+    map_id = cursor.lastrowid
+    db.close()
+    return map_id
+# fonction pour supprimer un map (et tous ses nodes associés)
+def delete_map(map_id,db_mode="local"):
+    db = get_connection(db_mode)
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM nodes WHERE map_id=%s", (map_id,))
+    cursor.execute("DELETE FROM maps WHERE id=%s", (map_id,))
+    db.commit()
+    db.close()
+# fonction pour éditer le titre d'un map
+def edit_map_title(map_id,title,db_mode="local"):
+    db = get_connection(db_mode)
+    cursor = db.cursor()
+    cursor.execute("UPDATE maps SET title=%s WHERE id=%s",(title, map_id))
+    db.commit()
+    db.close()
+# Met à jour le texte du root node d'un mindmap
+def update_root_node(map_id, text, db_mode="local"):
+    db = get_connection(db_mode)
+    cursor = db.cursor()
+    cursor.execute("UPDATE nodes SET text=%s WHERE map_id=%s AND parent_id IS NULL",(text, map_id))
+    db.commit()
+    db.close()

@@ -1,6 +1,6 @@
 # prototype d'affichage de mindmap en radial et forum
 # avec possibilité d'éditer les nodes (si auteur) ou d'en ajouter en dessous    
-# JCY et Marc Schilter (projet Python) - 2025-2026 -v0.1
+# JCY et Marc Schilter (projet Python) - 2025-2026 - V0.3
 # 4 mai 2026
 # main.py : affichage de la fenêtre principale, gestion de la connexion et des différentes vues (tables + mindmap)
 
@@ -10,7 +10,7 @@ from atexit import register
 from tkinter import messagebox, simpledialog, colorchooser
 from login import show_login
 from tree_display import display_array
-from model import get_maps, get_nodes_for_map, get_users, get_nodes, create_user, update_node, delete_node, insert_node
+from model import get_maps, get_nodes_for_map, get_users, get_nodes, create_user, update_node, delete_node, insert_node, insert_map, delete_map, edit_map_title,update_root_node
 from utils.session import Session
 import math
 import bcrypt
@@ -28,6 +28,7 @@ def display_maps():
     result = get_maps(db_mode)
     frm_result.tree = display_array(frm_result, result)
     frm_result.tree.bind("<Double-1>", on_map_double_click) # double clic pour afficher le mindmap dans right_frame selon le mode sélectionné (tree, radial ou forum)
+    frm_result.tree.bind("<Button-3>", show_map_menu) # clic droit pour afficher le menu de gestion du mindmap (éditer, supprimer, etc.)
 #afficher les users
 def display_users():
     result = get_users(db_mode)
@@ -340,11 +341,16 @@ def display_mindmap_radial(frame, nodes):
     draw_node(center_x, center_y, root,root.get("color", "lightblue"))
     draw_children(root, center_x, center_y)
 
+# Vérifie si l'utilisateur peut modifier/supprimer un élément
+def can_edit(author_id):
+    # Admin level 2 → accès total
+    if Session.level == 2:
+        return True
+    # Auteur original
+    return author_id == Session.id
+
 #Cette fonction propose 3 actions sur un node : éditer le texte, supprimer le node ou insérer un nouveau node en dessous
 def edit_node(event, node):
-    #if not check_auth():
-    #    messagebox.showerror("Erreur", "Vous devez être connecté en tant qu'utilisateur pour effectuer cette action.")
-    #    return
     menu = tk.Menu(root, tearoff=0)
     menu.add_command(label="Éditer", command=lambda: edit_text(node))
     menu.add_command(label="Supprimer", command=lambda: delete_node_action(node))
@@ -354,8 +360,8 @@ def edit_node(event, node):
 # propose d'éditer le texte d'un node (seulement si l'utilisateur est l'auteur du node)
 def edit_text(node):
     # Compare l'author id du node au id de l'utilisateur connecté
-    if node["author_id"] != Session.id:
-        messagebox.showerror("Erreur", "Vous n'êtes pas l'auteur de ce node.")
+    if not can_edit(node["author_id"]):
+        messagebox.showerror("Erreur", "Vous n'avez pas les permissions.")
         return
     # Si les deux id correspondent, propose une fenêtre de saisie pour éditer le texte du node
     new_text = simpledialog.askstring("Éditer le node", "Nouveau texte :", initialvalue=node["text"])
@@ -370,8 +376,8 @@ def edit_text(node):
 # propose de supprimer un node (seulement si l'utilisateur est l'auteur du node)
 def delete_node_action(node):
     # Compare l'author id du node au id de l'utilisateur connecté
-    if node["author_id"] != Session.id:
-        messagebox.showerror("Erreur", "Vous n'êtes pas l'auteur de ce node.")
+    if not can_edit(node["author_id"]):
+        messagebox.showerror("Erreur", "Vous n'avez pas les permissions.")
         return
     # Si les deux id correspondent, propose une confirmation avant de supprimer le node
     if messagebox.askyesno("Confirmer la suppression", "Êtes-vous sûr de vouloir supprimer ce node ?"):
@@ -396,7 +402,6 @@ def insert_below(node):
             messagebox.showerror("Erreur", f"Impossible d'insérer le node : {str(e)}")
     else:
         messagebox.showerror("Erreur", "Le texte du node ne peut pas être vide.")
-
 
 # Permet de changer le mode de la base de données (local ou remote) et met à jour la variable globale db_mode
 def set_db_mode(mode):
@@ -503,8 +508,114 @@ def register_user():
     tk.Button(btn_frame, text="Créer", command=submit).pack(side="left", padx=5)
     tk.Button(btn_frame, text="Annuler", command=win.destroy).pack(side="left", padx=5)
 
+# Affiche le menu contextuel des maps
+def show_map_menu(event):
 
+    # Récupère la ligne cliquée
+    item = frm_result.tree.identify_row(event.y)
 
+    # Création du menu contextuel
+    menu = tk.Menu(root, tearoff=0)
+
+    # Si une ligne est cliquée
+    if item:
+
+        # Sélectionne la ligne
+        frm_result.tree.selection_set(item)
+
+        # Options du menu
+        menu.add_command(label="Éditer le titre",command= edit_mindmap_title)
+        menu.add_command(label="Supprimer", command=delete_mindmap)
+    # Option disponible même si aucune ligne n'est sélectionnée
+    menu.add_command(label="Insérer un nouveau map", command=create_map)
+
+    # Affiche le menu à la position de la souris
+    menu.post(event.x_root, event.y_root)
+
+# Création d'un nouveau mindmap
+def create_map():
+    # Vérifie que l'utilisateur est connecté
+    if not check_auth():
+        messagebox.showerror("Erreur","Vous devez être connecté en tant qu'utilisateur pour effectuer cette action.")
+        return
+    # Demande le nom du nouveau map
+    name = simpledialog.askstring("Nouveau Mindmap","Nom du nouveau mindmap :")
+    # Vérifie que le nom du nouveau map n'est pas vide
+    if name and name.strip() != "":
+
+        try:
+            # Appelle la fonction SQL du model
+            map_id = insert_map(name.strip(), Session.id, db_mode)
+            #Insére automatiquement le premier node qui porte le même nom
+            insert_node(map_id,None,Session.id, name.strip(),0,db_mode)
+
+            # Rafraîchir la liste
+            display_maps()
+
+            # Afficher automatiquement le nouveau mindmap
+            display_mindmap(map_id)
+
+        except Exception as e:
+            messagebox.showerror("Erreur",f"Impossible de créer le mindmap : {str(e)}")
+    else:
+        messagebox.showerror("Erreur","Le nom du mindmap ne peut pas être vide.")
+
+# Suppression d'un mindmap
+def delete_mindmap():
+    selected = frm_result.tree.selection()
+    if selected:
+        item = frm_result.tree.item(selected[0])
+        values = item['values']
+        map_id = values[0]
+        author_id = values[2]
+        # Vérifie que l'utilisateur connecté est bien autorisé à modifier le mindmap avant de confirmer la suppression
+        if not can_edit(author_id):
+            messagebox.showerror("Erreur", "Vous n'avez pas les permissions.")
+            return
+        # Demande une confirmation avant de supprimer le mindmap
+        if messagebox.askyesno("Confirmer la suppression", "Êtes-vous sûr de vouloir supprimer ce mindmap ?"):
+            try:
+                delete_map(map_id, db_mode)
+                # Rafraîchir la liste des maps après suppression
+                display_maps()
+                # Nettoyer right_frame si le map supprimé était affiché
+                global current_map_id
+                if current_map_id == map_id:
+                    current_map_id = None
+                    for widget in right_frame.winfo_children():
+                        widget.destroy()
+                    tk.Label(right_frame, text="Zone Mindmap", font=("Arial", 16)).pack(expand=True)
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Impossible de supprimer le mindmap : {str(e)}")
+    else:
+        messagebox.showerror("Erreur", "Aucun mindmap sélectionné.")
+
+# Propose d'éditer le titre du mindmap (seulement si l'utilisateur est l'auteur du mindmap)
+def edit_mindmap_title():
+    selected = frm_result.tree.selection()
+    if selected:
+        item = frm_result.tree.item(selected[0])
+        values = item['values']
+        map_id = values[0]
+        author_id = values[2]
+        # Vérifie que l'utilisateur connecté est bien autorisé à modifier le mindmap avant de proposer l'édition du titre
+        if not can_edit(author_id):
+            messagebox.showerror("Erreur", "Vous n'avez pas les permissions.")
+            return
+        new_title = simpledialog.askstring("Éditer le titre", "Nouveau titre :", initialvalue=values[1])
+        if new_title and new_title.strip() != "" and new_title != values[1]:
+            try:
+                edit_map_title(map_id, new_title.strip(), db_mode)
+                # Met à jour le root node
+                update_root_node(map_id, new_title.strip(), db_mode)
+                # Rafraîchir la liste des maps pour voir le changement de titre
+                display_maps()
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Impossible de mettre à jour le titre : {str(e)}")
+        else:
+            messagebox.showerror("Erreur", "Le titre du mindmap ne peut pas être vide ou identique au titre actuel.")
+    else:
+        messagebox.showerror("Erreur", "Aucun mindmap sélectionné.")
 
 # Fenêtre principale
 root = tk.Tk()

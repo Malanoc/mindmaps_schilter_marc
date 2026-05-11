@@ -1,5 +1,5 @@
 # Projet mindmaps : prototype d'affichage de mindmap en radial et forum 
-# JCY et Marc Schilter (projet Python) - 2025-2026 -v0.1
+# JCY et Marc Schilter (projet Python) - 2025-2026 -v0.3
 # 4 mai 2026
 # session.py : gestion de la session utilisateur (stockage du pseudo et du niveau d'accès)
 
