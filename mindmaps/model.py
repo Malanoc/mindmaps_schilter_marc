@@ -130,3 +130,4 @@ def update_root_node(map_id, text, db_mode="local"):
     cursor.execute("UPDATE nodes SET text=%s WHERE map_id=%s AND parent_id IS NULL",(text, map_id))
     db.commit()
     db.close()
+

@@ -7,17 +7,23 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from atexit import register
-from tkinter import messagebox, simpledialog, colorchooser
+from tkinter import messagebox, simpledialog, colorchooser, filedialog
 from login import show_login
 from tree_display import display_array
 from model import get_maps, get_nodes_for_map, get_users, get_nodes, create_user, update_node, delete_node, insert_node, insert_map, delete_map, edit_map_title,update_root_node
 from utils.session import Session
+from PIL import ImageGrab
+from reportlab.pdfgen import canvas as pdf_canvas
 import math
 import bcrypt
+import os
+import tempfile
 
 # Variable globale pour le mode DB
 db_mode = None
 current_map_id = None
+current_canvas = None
+current_widget = None
 
 # Vérification de connexion
 def check_auth():
@@ -80,10 +86,12 @@ def refresh_mindmap():
 
 # Affichage du mindmap en TreeView (version simple)
 def display_mindmap_tree(frame, nodes):
-
+    global current_widget
     # Créer le Treeview
     tree = ttk.Treeview(frame, columns=(), show='tree')  # Pas de colonnes supplémentaires
     tree.heading('#0', text='Text')
+    # Identification du type d'affichage de mindmap pour impression/export
+    current_widget = tree
 
     # Police plus petite et interligne ajusté pour beaucoup d'enregistrements
     style = ttk.Style()
@@ -119,10 +127,13 @@ def display_mindmap_tree(frame, nodes):
 
 # Affichage du mindmap en forum (version plus compacte et adaptée à l'affichage de nombreux nodes, avec possibilité d'éditer les nodes ou d'en ajouter en dessous)
 def display_mindmap_forum(frame, nodes):
+    global current_widget
     container = tk.Frame(frame)
     container.pack(fill='both', expand=True)
 
     canvas = tk.Canvas(container, bg='white')
+    # Stocke le canvas actuel pour l'impression/export
+    current_widget = canvas
     vsb = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
     hsb = ttk.Scrollbar(container, orient="horizontal", command=canvas.xview)
 
@@ -194,10 +205,13 @@ def display_mindmap_forum(frame, nodes):
 
 # Affichage du mindmap en radial avec canvas
 def display_mindmap_radial(frame, nodes):
+    global current_widget
     container = tk.Frame(frame)
     container.pack(fill='both', expand=True)
 
     canvas = tk.Canvas(container, bg='white')
+    # Stocke le canvas actuel pour l'impression/export
+    current_widget = canvas
     vsb = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
     hsb = ttk.Scrollbar(container, orient="horizontal", command=canvas.xview)
 
@@ -617,14 +631,199 @@ def edit_mindmap_title():
     else:
         messagebox.showerror("Erreur", "Aucun mindmap sélectionné.")
 
+# Génère un PDF du canvas actuellement affiché
+def generate_mindmap_pdf(pdf_file):
+
+    global current_widget
+
+    # Récupère toute la zone utilisée du canvas
+    x1, y1, x2, y2 = current_widget.bbox("all")
+
+    # Calcule la largeur et la hauteur du contenu
+    width = x2 - x1
+    height = y2 - y1
+
+    # Crée le PDF avec la taille exacte du contenu
+    pdf = pdf_canvas.Canvas(pdf_file, pagesize=(width, height))
+
+    # Parcourt tous les éléments du canvas
+    for item in current_widget.find_all():
+
+        # Récupère le type et les coordonnées de l'élément
+        item_type = current_widget.type(item)
+        coords = current_widget.coords(item)
+
+        # LIGNES
+        if item_type == "line":
+
+            # Vérifie qu'il y a bien 2 points
+            if len(coords) >= 4:
+
+                # Coordonnées de départ
+                x_start = coords[0] - x1
+                y_start = height - (coords[1] - y1)
+
+                # Coordonnées d'arrivée
+                x_end = coords[2] - x1
+                y_end = height - (coords[3] - y1)
+
+                # Dessine la ligne dans le PDF
+                pdf.line(x_start, y_start, x_end, y_end)
+
+        # OVALES (mode radial)
+        elif item_type == "oval":
+
+            # Vérifie qu'on possède bien les 4 coordonnées
+            if len(coords) >= 4:
+
+                # Coordonnées du rectangle contenant l'ovale
+                left = coords[0] - x1
+                top = height - (coords[1] - y1)
+
+                right = coords[2] - x1
+                bottom = height - (coords[3] - y1)
+
+                # Récupère la couleur de fond
+                fill = current_widget.itemcget(item, "fill")
+
+                # Applique la couleur dans ReportLab
+                try:
+                    pdf.setFillColor(fill)
+                except:
+                    pdf.setFillColor("white")
+
+                # Dessine l'ovale
+                pdf.ellipse(left, bottom, right, top, fill=1)
+
+        # POLYGONES (mode forum)
+        elif item_type == "polygon":
+
+            # Liste des points convertis
+            points = []
+
+            # Convertit les coordonnées Tkinter → PDF
+            for i in range(0, len(coords), 2):
+
+                px = coords[i] - x1
+                py = height - (coords[i + 1] - y1)
+
+                points.extend([px, py])
+
+            # Récupère la couleur de fond
+            fill = current_widget.itemcget(item, "fill")
+
+            # Applique la couleur
+            try:
+                pdf.setFillColor(fill)
+            except:
+                pdf.setFillColor("white")
+
+            # Crée un chemin vectoriel
+            path = pdf.beginPath()
+
+            # Premier point du polygone
+            path.moveTo(points[0], points[1])
+
+            # Ajoute les autres points
+            for i in range(2, len(points), 2):
+                path.lineTo(points[i], points[i + 1])
+
+            # Ferme le polygone
+            path.close()
+
+            # Dessine le polygone
+            pdf.drawPath(path, fill=1, stroke=1)
+
+        # TEXTES
+        elif item_type == "text":
+
+            # Vérifie qu'on possède une position
+            if len(coords) >= 2:
+
+                # Position du texte
+                x = coords[0] - x1
+                y = height - (coords[1] - y1)
+
+                # Récupère le texte du canvas
+                text = current_widget.itemcget(item, "text")
+
+                # Couleur du texte
+                pdf.setFillColor("black")
+
+                # Dessine le texte centré
+                pdf.drawCentredString(x, y, text)
+
+    # Sauvegarde finale du PDF
+    pdf.save()
+
+
+# Exporte le mindmap actuel en PDF
+def pdf_export():
+
+    global current_widget
+
+    # Vérifie qu'un widget est affiché
+    if current_widget is None:
+        messagebox.showerror("Erreur", "Aucun mindmap à exporter.")
+        return
+
+    try:
+
+        # Demande où enregistrer le PDF
+        pdf_file = filedialog.asksaveasfilename(defaultextension=".pdf",filetypes=[("PDF files", "*.pdf")],title="Enregistrer le PDF")
+
+        # Si l'utilisateur annule
+        if not pdf_file:
+            return
+
+        # Génère le PDF
+        generate_mindmap_pdf(pdf_file)
+
+        # Ouvre automatiquement le PDF
+        os.startfile(pdf_file)
+
+    except Exception as e:
+        messagebox.showerror("Erreur", f"Impossible d'exporter : {str(e)}")
+
+
+# Imprime le mindmap actuel
+def print_current_mindmap():
+
+    global current_widget
+
+    # Vérifie qu'un widget est affiché
+    if current_widget is None:
+        messagebox.showerror("Erreur", "Aucun mindmap à imprimer.")
+        return
+
+    try:
+
+        # Crée un PDF temporaire
+        temp_pdf = tempfile.mktemp(".pdf")
+
+        # Génère le PDF temporaire
+        generate_mindmap_pdf(temp_pdf)
+
+        # Lance l'impression Windows
+        os.startfile(temp_pdf, "print")
+
+    except Exception as e:
+        messagebox.showerror("Erreur", f"Impossible d'imprimer : {str(e)}")
+
 # Fenêtre principale
 root = tk.Tk()
 # Ajusté pour accommoder les deux frames
 root.minsize(1200, 800)
-root.title("Mindmaps - Version de base v0.1")
+root.title("Mindmaps - Version de base v1.0")
 
 # Création du menu
 menubar = tk.Menu(root)
+
+# Menu fichier
+file_menu = tk.Menu(menubar, tearoff=0)
+file_menu.add_command(label="Imprimer le mindmap", command=print_current_mindmap)
+file_menu.add_command(label="Export PDF le mindmap", command=pdf_export)
+menubar.add_cascade(label="Fichier", menu=file_menu)
 
 # Menu Afficher
 display_menu = tk.Menu(menubar, tearoff=0)
