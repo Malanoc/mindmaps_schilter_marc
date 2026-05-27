@@ -164,14 +164,20 @@ pip install reportlab
 # Structure du projet
 
 ```text
-main.py
-model.py
-config.py
-login.py
-tree_display.py
-utils/
-    session.py
-.env
+mindmaps/
+
+    BD/
+     mindmaps.mwb
+     
+    utils/
+     .env
+     .gitignore
+     login.py
+     main.py
+     mindmaps.mwb
+     model.py
+     ReadMe.md
+     tree_display.py
 ```
 # Fonctionnement général
 
