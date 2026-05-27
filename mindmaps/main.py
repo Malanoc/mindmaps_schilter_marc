@@ -6,13 +6,11 @@
 
 import tkinter as tk
 import tkinter.ttk as ttk
-from atexit import register
 from tkinter import messagebox, simpledialog, colorchooser, filedialog
 from login import show_login
 from tree_display import display_array
 from model import get_maps, get_nodes_for_map, get_users, get_nodes, create_user, update_node, delete_node, insert_node, insert_map, delete_map, edit_map_title,update_root_node
 from utils.session import Session
-from PIL import ImageGrab
 from reportlab.pdfgen import canvas as pdf_canvas
 import math
 import bcrypt
