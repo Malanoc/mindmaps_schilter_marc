@@ -4,7 +4,7 @@
 
 Cette application permet de créer, modifier et visualiser des mindmaps collaboratifs en Python avec une interface graphique Tkinter.
 
-Le projet a été réalisé dans le cadre du cours de Python 2025-2026.
+Le projet a été réalisé dans le cadre du cours du CPNV Projet Python 2025-2026.
 
 L’application propose plusieurs modes d’affichage des mindmaps :
 - TreeView
@@ -83,7 +83,7 @@ Clic droit sur un node :
 
 ## 1. TreeView
 
-Affichage hiérarchique classique avec `ttk.Treeview`.
+Affichage hiérarchique classique avec `ttk.Treeview`
 
 ---
 
@@ -178,37 +178,36 @@ utils/
 ## main.py
 
 Contient :
-- l’interface principale
-- l’affichage des mindmaps
-- les menus
-- la gestion utilisateur
-- l’export PDF
+- L’interface principale
+- L’affichage des mindmaps
+- Les menus
+- La gestion utilisateur
+- L’export PDF et l’impression
 
 ---
 
 ## model.py
 
 Contient :
-- les requêtes SQL
-- les insert/update/delete
-- les accès à la base de données
+- Les requêtes SQL
+- Les insert/update/delete
 
 ---
 
 ## config.py
 
 Charge les variables d’environnement :
-- base locale
-- base distante
+- Base locale
+- Base distante
 
 ---
 
 ## session.py
 
 Gère :
-- l’utilisateur connecté
-- le niveau utilisateur
-- les permissions
+- L’utilisateur connecté
+- La connexion de l’utilisateur
+- La déconnexion de l'utilisateur
 
 ---
 
@@ -242,8 +241,8 @@ Ce que fait cette fonction :
 
 Le mode radial utilise :
 
-- des calculs trigonométriques
-- une fonction récursive pour positionner les nodes
+- Des calculs trigonométriques pour le canvas
+- Une fonction récursive pour positionner les nodes
 
 # Auteurs
 
