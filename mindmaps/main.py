@@ -427,7 +427,7 @@ def set_db_mode(mode):
 
 # connexion (appelle une fenêtre de login)
 def login():
-    show_login(root)
+    show_login(root, db_mode)
     if Session.is_authenticated():
         lbl_user.config(text=f"Connecté en tant que {Session.pseudo}")
 # deconnexion
