@@ -812,7 +812,7 @@ def print_current_mindmap():
 root = tk.Tk()
 # Ajusté pour accommoder les deux frames
 root.minsize(1200, 800)
-root.title("Mindmaps - Version de base v1.0")
+root.title("Mindmaps - Version v1.0")
 
 # Création du menu
 menubar = tk.Menu(root)
