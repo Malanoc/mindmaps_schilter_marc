@@ -7,6 +7,9 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import messagebox, simpledialog, colorchooser, filedialog
+
+from reportlab.lib.colors import lightgrey, green
+
 from login import show_login
 from tree_display import display_array
 from model import get_maps, get_nodes_for_map, get_users, get_nodes, create_user, update_node, delete_node, insert_node, insert_map, delete_map, edit_map_title,update_root_node
@@ -888,15 +891,15 @@ frm_buttons = tk.Frame(left_frame, bg="lightblue")
 frm_buttons.grid(column=0, row=1, pady=10)
 
 # frame pour les options d'affichage
-frm_options = tk.Frame(left_frame, bg="lightgrey")
+frm_options = tk.Frame(left_frame, bg="#f0f0f0")
 frm_options.grid(column=0, row=2, pady=10)
 
 tk.Label(frm_options, text="Mode d'affichage Mindmap:").pack(anchor='w')
 tk.Radiobutton(frm_options, text="Treeview", variable=display_mode, value='tree', command=refresh_mindmap).pack(anchor='w')
 tk.Radiobutton(frm_options, text="Forum", variable=display_mode, value='forum', command=refresh_mindmap).pack(anchor='w')
 tk.Radiobutton(frm_options, text="Radial",variable=display_mode, value='radial', command=refresh_mindmap).pack(anchor='w')
-
-tk.Button(frm_options, text="Tout Rafraîchir", command=refresh_all).pack(pady=5)
+tk.Button(frm_options, text="Tout Rafraîchir (F5)",command=refresh_all, bg="lightblue").pack(pady=5)
+root.bind("<F5>", lambda event: refresh_all())
 
 # frame pour l'affichage des résultats dans left_frame
 frm_result = tk.Frame(left_frame, bg="lightgreen")
