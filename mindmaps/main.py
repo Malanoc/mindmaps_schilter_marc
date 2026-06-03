@@ -418,9 +418,12 @@ def insert_below(node):
 # Permet de changer le mode de la base de données (local ou remote) et met à jour la variable globale db_mode
 def set_db_mode(mode):
     global db_mode
-    if (mode != db_mode): # éviter de faire un logout inutile qui ferait perdre la connexion à l'utilisateur
+    # éviter de faire un logout inutile qui ferait perdre la connexion à l'utilisateur
+    if (mode != db_mode):
+        # Déconnecte l'utilisateur si quelqu'un est connecté
+        if Session.id is not None:
+            logout()
         db_mode = mode
-        #Session.logout()  # forcer le logout pour éviter les incohérences
         lbl_user.config(text="Non connecté")
         lbl_db_mode.config(text=f"Mode DB: {db_mode}", bg="red" if db_mode == "remote" else "green", fg="white")
         display_maps()  # rafraîchir l'affichage des maps pour éviter les incohérences
@@ -429,7 +432,7 @@ def set_db_mode(mode):
 def login():
     show_login(root, db_mode)
     if Session.is_authenticated():
-        lbl_user.config(text=f"Connecté en tant que {Session.pseudo}")
+        lbl_user.config(text=f"Connecté en tant que {Session.pseudo} / {Session.level}")
 # deconnexion
 def logout():
     #déconnecte la session authentifiée
@@ -808,6 +811,14 @@ def print_current_mindmap():
     except Exception as e:
         messagebox.showerror("Erreur", f"Impossible d'imprimer : {str(e)}")
 
+# Fonction pour tout rafraîchir
+def refresh_all():
+
+    refresh_mindmap()
+
+    if current_map_id is not None:
+        display_mindmap(current_map_id)
+
 # Fenêtre principale
 root = tk.Tk()
 # Ajusté pour accommoder les deux frames
@@ -877,13 +888,15 @@ frm_buttons = tk.Frame(left_frame, bg="lightblue")
 frm_buttons.grid(column=0, row=1, pady=10)
 
 # frame pour les options d'affichage
-frm_options = tk.Frame(left_frame, bg="lightyellow")
+frm_options = tk.Frame(left_frame, bg="lightgrey")
 frm_options.grid(column=0, row=2, pady=10)
 
 tk.Label(frm_options, text="Mode d'affichage Mindmap:").pack(anchor='w')
 tk.Radiobutton(frm_options, text="Treeview", variable=display_mode, value='tree', command=refresh_mindmap).pack(anchor='w')
 tk.Radiobutton(frm_options, text="Forum", variable=display_mode, value='forum', command=refresh_mindmap).pack(anchor='w')
 tk.Radiobutton(frm_options, text="Radial",variable=display_mode, value='radial', command=refresh_mindmap).pack(anchor='w')
+
+tk.Button(frm_options, text="Tout Rafraîchir", command=refresh_all).pack(pady=5)
 
 # frame pour l'affichage des résultats dans left_frame
 frm_result = tk.Frame(left_frame, bg="lightgreen")
